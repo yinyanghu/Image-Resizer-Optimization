@@ -77,29 +77,28 @@ void imageOutput(unsigned char *im, int sx, int sy, const char *name);
 ** 一定要比slow_rescale()快哦！
 *****************************************************/
 
-unsigned char f[101][256];
 
 
-void prepare()
-{
-	for (int i = 0; i <= 100; ++ i)
-		for (int j = 0; j < 256; ++ j)
-			f[i][j] = (unsigned char)((i * j) / 100);
-}
 
 unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x, int dest_y)
 {
+	
+	static unsigned char f[101][256];
+	
+	register unsigned char R1, G1, B1, R2, G2, B2, RT1, GT1, BT1;
+	register unsigned char R3, G3, B3, R4, G4, B4, RT2, GT2, BT2;
+	
 	unsigned char *dst;			// Destination image - must be allocated here! 
 	dst = (unsigned char *)calloc(dest_x * dest_y * 3, sizeof(unsigned char));   // Allocate and clear destination image
 	if (!dst) return(NULL);					       // Unable to allocate image
 	
-	
+	for (int i = 0; i <= 100; ++ i)
+		for (int j = 0; j < 256; ++ j)
+			f[i][j] = (unsigned char)((i * j) / 100);
 	
 	register double step_x, step_y;			// Step increase as per instructions above
-	register unsigned char R1, G1, B1, R2, G2, B2, empty1, empty2;		// Colours at the four neighbours
-	register unsigned char R3, G3, B3, R4, G4, B4, empty3, empty4;
-	register unsigned char RT1, GT1, BT1;			// Interpolated colours at T1 and T2
-	register unsigned char RT2, GT2, BT2;
+	//unsigned char R1, G1, B1, R2, G2, B2, empty1, empty2;		// Colours at the four neighbours
+	//unsigned char R3, G3, B3, R4, G4, B4, empty3, empty4;
 //	long long T1, T2;
 //	long long Color;
 	register unsigned char R, G, B;//, RR, GG, BB;			// Final colour at a destination pixel
@@ -110,6 +109,17 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 
 	step_x = (double)(src_x - 1)/(double)(dest_x - 1);
 	step_y = (double)(src_y - 1)/(double)(dest_y - 1);
+
+//	asm("kkk");
+//	R1 = 1; G1 = 1; B1 = 1; R2 = 1; G2 = 1; B2 = 1; RT1 = 1; GT1 = 1; BT1 = 1;
+//	R3 = 1; G3 = 1; B3 = 1; R4 = 1; G4 = 1; B4 = 1; RT2 = 1; GT2 = 1; BT2 = 1;
+	&R1; &G1; &B1; &R2; &G2; &B2; &RT1; &GT1; &BT1;
+	&R3; &G3; &B3; &R4; &G4; &B4; &RT2; &GT2; &BT2;
+//	asm("kkk");
+	
+//	printf("0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n", &R1, &G1, &B1, &R2, &G2, &B2, &RT1, &GT1, &BT1);
+//	printf("0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n", &R3, &G3, &B3, &R4, &G4, &B4, &RT2, &GT2, &BT2);
+	
 	
 	//printf("%.5lf\n", step_x);
 	//printf("%.5lf\n", step_y);
@@ -119,19 +129,26 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 	register int fl_y;
 //	int cl_x, cl_y;
 	register int k;
-	register int delta = 3 * src_x - 6;
+	register int delta = 3 * src_x;
 	// Loop over destination image
 	register unsigned char *p;
 	register unsigned char *q;
-	fx = 0;
+	register unsigned char *pp = &R1;
+	register unsigned char *qq = &R3;
 	
+	
+//	printf("0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n", &R1, &G1, &B1, &R2, &G2, &B2, &RT1, &GT1);
+//	printf("0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n", &R3, &G3, &B3, &R4, &G4, &B4, &RT2, &GT2);
+	
+	fx = 0;
+
 	for (int i = 0; i < dest_x; ++ i)
 	{
-		fx += step_x;
 		fl_x[i] = int(fx);
 		dx[i] = int((fx - fl_x[i]) * 100);
 		three_fl_x[i] = 3 * fl_x[i];
 		temp_x[i] = 100 - dx[i];
+		fx += step_x;
 	}
 	fy = 0;
 	for (y = 0; y < dest_y; ++ y)
@@ -146,19 +163,52 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 	
 	
 		p = q + three_fl_x[0];
-		R1 = *p ++;
-		G1 = *p ++;
-		B1 = *p ++;
-		R2 = *p ++;
-		G2 = *p ++;
-		B2 = *p ++;
-		p = p + delta;
-		R3 = *p ++;
-		G3 = *p ++;
-		B3 = *p ++;
-		R4 = *p ++;
-		G4 = *p ++;
-		B4 = *p ++;
+		//*pp = *((long long*)p);
+		*((long long*)pp) = *((long long*)p);
+		//if (G1 != *(p + 16)) printf("**************\n");
+		/*
+		if (*(p) != R1)
+			printf("R1 = %d %d %d\n", *p, R1, *pp);
+		if (*(p + 1) != G1)
+			printf("G1 = %d %d %d\n", *(p + 1), G1, *(pp + 1));
+		if (*(p + 2) != B1)
+			printf("B1 = %d %d %d\n", *(p + 2), B1, *(pp + 2));
+		if (*(p + 3) != R2)
+			printf("R2 = %d %d %d\n", *(p + 3), R2, *(pp + 3));
+		if (*(p + 4) != G2)
+			printf("G2 = %d %d %d\n", *(p + 4), G2, *(pp + 4));
+		if (*(p + 5) != B2)
+			printf("B2 = %d %d %d\n", *(p + 5), B2, *(pp + 5));
+			*/
+		/*
+		p ++;
+		p ++;
+		p ++;
+		p ++;
+		p ++;
+		p ++;
+		*/
+		//p = p + 6;
+		//p = p + delta;
+		//asm("hlt");
+		*((long long*)qq) = *((long long*)(p + delta));
+		//asm("hlt");
+		/*
+		
+		if (*(p) != R3)
+			printf("R3 = %d %d %d\n", *p, R3, *qq);
+		if (*(p + 1) != G3)
+			printf("G3 = %d %d %d\n", *(p + 1), G3, *(qq + 1));
+		if (*(p + 2) != B3)
+			printf("B3 = %d %d %d\n", *(p + 2), B3, *(qq + 2));
+		if (*(p + 3) != R4)
+			printf("R4 = %d %d %d\n", *(p + 3), R4, *(qq + 3));
+		if (*(p + 4) != G4)
+			printf("G4 = %d %d %d\n", *(p + 4), G4, *(qq + 4));
+		if (*(p + 5) != B4)
+			printf("B4 = %d %d %d\n", *(p + 5), B4, *(qq + 5));	
+		
+		*/
 		RT1 = f[dx[0]][R2] + f[temp_x[0]][R1];
 		GT1 = f[dx[0]][G2] + f[temp_x[0]][G1];
 		BT1 = f[dx[0]][B2] + f[temp_x[0]][B1];
@@ -170,11 +220,12 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 		B = f[dy][BT2] + f[temp_y][BT1];
 		*offset ++ = R;
 		*offset ++ = G;
-		*offset ++ = B;	
+		*offset ++ = B;
 		for (x = 1; x < dest_x; ++ x)
 		{
 			if (three_fl_x[x] != three_fl_x[x - 1])
 			{
+
 			// *(R)=*(image+((x+(y*sx))*3)+0);
 			// *(G)=*(image+((x+(y*sx))*3)+1);
 			// *(B)=*(image+((x+(y*sx))*3)+2);
@@ -190,13 +241,31 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 //			N1 = *(unsigned int*)(src + k);
 
 			
-			p = q + three_fl_x[x];
+//			p = q + three_fl_x[x];
+//			printf("0x%08x\n", p);
+			p = p + 3;
+			//*pp = *((long long*)p);
+			*((long long*)pp) = *((long long*)p);
+			/*
+			if (*(p) != R1)
+				printf("R1 = %d %d %d\n", *p, R1, *pp);
+			if (*(p + 1) != G1)
+				printf("G1 = %d %d %d\n", *(p + 1), G1, *(pp + 1));
+			if (*(p + 2) != B1)
+				printf("B1 = %d %d %d\n", *(p + 2), B1, *(pp + 2));
+			if (*(p + 3) != R2)
+				printf("R2 = %d %d %d\n", *(p + 3), R2, *(pp + 3));
+			if (*(p + 4) != G2)
+				printf("G2 = %d %d %d\n", *(p + 4), G2, *(pp + 4));
+			if (*(p + 5) != B2)
+				printf("B2 = %d %d %d\n", *(p + 5), B2, *(pp + 5));				
+			*/
+/*
 //			printf("%d  ", src_x * fl_y * 3 + three_fl_x[x]);
-			asm("hlt");
 			R1 = *p ++;
 			G1 = *p ++;
 			B1 = *p ++;
-			asm("hlt");
+
 //			R1 = src[k];
 //			G1 = src[k + 1];
 //			B1 = src[k + 2];
@@ -210,11 +279,41 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 			R2 = *p ++;
 			G2 = *p ++;
 			B2 = *p ++;
-			
+*/
 			
 //			getPixel(src, ceil(fx), floor(fy), src_x, &R2, &G2, &B2);	// get N2 colours
-
-			p = p + delta;
+/*
+		p ++;
+		p ++;
+		p ++;
+		p ++;
+		p ++;
+		p ++;
+	*/
+		//p = p + 6;
+		
+			//p = p + delta;
+			//*qq = *((long long*)p);
+			*((long long*)qq) = *((long long*)(p + delta));
+			
+			
+			/*
+			if (*(p) != R3)
+				printf("R3 = %d %d %d\n", *p, R3, *qq);
+			if (*(p + 1) != G3)
+				printf("G3 = %d %d %d\n", *(p + 1), G3, *(qq + 1));
+			if (*(p + 2) != B3)
+				printf("B3 = %d %d %d\n", *(p + 2), B3, *(qq + 2));
+			if (*(p + 3) != R4)
+				printf("R4 = %d %d %d\n", *(p + 3), R4, *(qq + 3));
+			if (*(p + 4) != G4)
+				printf("G4 = %d %d %d\n", *(p + 4), G4, *(qq + 4));
+			if (*(p + 5) != B4)
+				printf("B4 = %d %d %d\n", *(p + 5), B4, *(qq + 5));	
+		*/
+			
+			
+/*
 			R3 = *p ++;
 			G3 = *p ++;
 			B3 = *p ++;
@@ -236,7 +335,7 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 			 // Interpolate to get T1 and T2 colours
 			
 			
-
+*/
 
 //			T1 = ((long long)N2 + N1) >> 1;
 /*
@@ -248,7 +347,7 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 			GT2 = (G4 + G3) >> 1;
 			BT2 = (B4 + B3) >> 1;
 */
-			xx = dx[x]; xxx = temp_x[x];
+			
 /*
 			RT1 = (dx * R2) + temp_x * R1;
 			GT1 = (dx * G2) + temp_x * G1;
@@ -257,12 +356,7 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 			GT2 = (dx * G4) + temp_x * G3;
 			BT2 = (dx * B4) + temp_x * B3;
 */
-			RT1 = f[xx][R2] + f[xxx][R1];
-			GT1 = f[xx][G2] + f[xxx][G1];
-			BT1 = f[xx][B2] + f[xxx][B1];
-			RT2 = f[xx][R4] + f[xxx][R3];
-			GT2 = f[xx][G4] + f[xxx][G3];
-			BT2 = f[xx][B4] + f[xxx][B3];
+			
 
 			// Obtain final colour by interpolating between T1 and T2
 			
@@ -297,11 +391,19 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 */
 
 
+			
+			}
+//	printf("******************************\n");
+			xx = dx[x]; xxx = temp_x[x];
+			RT1 = f[xx][R2] + f[xxx][R1];
+			GT1 = f[xx][G2] + f[xxx][G1];
+			BT1 = f[xx][B2] + f[xxx][B1];
+			RT2 = f[xx][R4] + f[xxx][R3];
+			GT2 = f[xx][G4] + f[xxx][G3];
+			BT2 = f[xx][B4] + f[xxx][B3];
 			R = f[dy][RT2] + f[temp_y][RT1];
 			G = f[dy][GT2] + f[temp_y][GT1];
 			B = f[dy][BT2] + f[temp_y][BT1];
-			}
-//	printf("******************************\n");		
 			*offset ++ = R;
 			*offset ++ = G;
 			*offset ++ = B;
@@ -498,7 +600,6 @@ int main(int argc, char *argv[])
  int c_a,c_b;
  double FPS_a;
  double FPS_b;
-
  if (argc!=2)
  {
   fprintf(stderr,"Usage: Image_Rescale src_name\n");
@@ -511,6 +612,9 @@ int main(int argc, char *argv[])
   fprintf(stderr,"Unable to open test image\n");
   exit(1);
  }
+
+
+
 
  fprintf(stderr,"Starting tests...\n");
  // Time plain slow routine
@@ -533,7 +637,7 @@ int main(int argc, char *argv[])
  }
 
 
-	prepare();
+	
 
  // Time your fast routine
  t3=t2=time(NULL);
@@ -554,6 +658,12 @@ int main(int argc, char *argv[])
  {
   fprintf(stderr,"Fast routine not implemented\n");
  }
+
+
+
+
+
+
 
  // Output rescaled images for inspection
  dst=slow_rescale(src,sx,sy,HD_Xres,HD_Yres);
