@@ -77,15 +77,31 @@ void imageOutput(unsigned char *im, int sx, int sy, const char *name);
 *****************************************************/
 
 
-
+//bool calced = true;
 
 unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x, int dest_y)
 {
 	
-//	static unsigned char f[101][256];
+	static int f[101][1024];
 	
-	register unsigned char R1, G1, B1, R2, G2, B2, RT1, GT1;
-	register unsigned char R3, G3, B3, R4, G4, B4, RT2, GT2;
+//	if (calced)
+//	{
+//			printf("*************");
+//		asm("halt");
+//		calced = false;
+	for (int i = 0; i <= 100; ++ i)
+		for (int j = -510; j <= 510; ++ j)
+			f[i][j + 510] = ((i * j) / 100);
+//		asm("halt");
+//	}
+	register unsigned char R1, G1, B1, R2, G2, B2, empty1, empty2;
+	register unsigned char R3, G3, B3, R4, G4, B4, empty3, empty4;
+
+	unsigned char A[16];
+//	unsigned char B[8];
+
+	register int RT1, GT1, BT1, RT3, GT3, BT3, RT2, GT2, BT2;
+
 	
 	unsigned char *dst;			// Destination image - must be allocated here! 
 	dst = (unsigned char *)calloc(dest_x * dest_y * 3, sizeof(unsigned char));   // Allocate and clear destination image
@@ -96,10 +112,10 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 	//unsigned char R3, G3, B3, R4, G4, B4, empty3, empty4;
 //	long long T1, T2;
 //	long long Color;
-	register unsigned char R, G, B;//, RR, GG, BB;			// Final colour at a destination pixel
+//	register unsigned char R, G, B;//, RR, GG, BB;			// Final colour at a destination pixel
 	register int x, y, xx, xxx;			// Coordinates on destination image
 	double fx, fy;				// Corresponding coordinates on source image
-	register double dy;				// Fractional component of source image coordinates
+	register int dy;				// Fractional component of source image coordinates
 	register unsigned char *offset = dst;
 
 	step_x = (double)(src_x - 1)/(double)(dest_x - 1);
@@ -107,19 +123,21 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 //	asm("kkk");
 //	R1 = 1; G1 = 1; B1 = 1; R2 = 1; G2 = 1; B2 = 1; RT1 = 1; GT1 = 1; BT1 = 1;
 //	R3 = 1; G3 = 1; B3 = 1; R4 = 1; G4 = 1; B4 = 1; RT2 = 1; GT2 = 1; BT2 = 1;
-	&R1; &G1; &B1; &R2; &G2; &B2; &RT1; &GT1;
-	&R3; &G3; &B3; &R4; &G4; &B4; &RT2; &GT2;
+	&R1; &G1; &B1; &R2; &G2; &B2; &empty1; &empty2;
+	&R3; &G3; &B3; &R4; &G4; &B4; &empty3; &empty4;
 //	asm("kkk");
 	
 //	printf("0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n", &R1, &G1, &B1, &R2, &G2, &B2, &RT1, &GT1, &BT1);
 //	printf("0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n", &R3, &G3, &B3, &R4, &G4, &B4, &RT2, &GT2, &BT2);
 	
+
+		
 	
 	//printf("%.5lf\n", step_x);
 	//printf("%.5lf\n", step_y);
 	
 	static int fl_x[HD_Xres], three_fl_x[HD_Xres];
-	static double dx[HD_Xres], dxdy[HD_Xres];
+	static int dx[HD_Xres];
 	
 	int fl_y;
 //	int cl_x, cl_y;
@@ -130,7 +148,8 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 	register unsigned char *q;
 	register unsigned char *pp = &R1;
 	register unsigned char *qq = &R3;
-	register double *k;
+	register int *left, *right;
+	register int *k;
 	
 //	printf("0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n", &R1, &G1, &B1, &R2, &G2, &B2, &RT1, &GT1);
 //	printf("0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n", &R3, &G3, &B3, &R4, &G4, &B4, &RT2, &GT2);
@@ -140,7 +159,7 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 	for (int i = 0; i != dest_x; ++ i)
 	{
 		fl_x[i] = int(fx);
-		dx[i] = fx - fl_x[i];
+		dx[i] = int((fx - fl_x[i]) * 100);
 		three_fl_x[i] = 3 * fl_x[i];
 		fx += step_x;
 	}
@@ -148,16 +167,43 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 	for (y = 0; y != dest_y; ++ y)
 	{
 		fl_y = int(fy);
-		dy = fy - fl_y;
+		dy = int((fy - fl_y) * 100);
 		q = src + 3 * src_x * fl_y;
-
+		
+		
+		right = f[dy];
+		
 		p = q + three_fl_x[0];
 		*((long long*)pp) = *((long long*)p);
 		*((long long*)qq) = *((long long*)(p + delta));
 		
-		*offset ++ = (R1 + R4 - R2 - R3) * dy * dx[0] + (R2 - R1) * dx[0] + (R3 - R1) * dy + R1;
-		*offset ++ = (G1 + G4 - G2 - G3) * dy * dx[0] + (G2 - G1) * dx[0] + (G3 - G1) * dy + G1;
-		*offset ++ = (B1 + B4 - B2 - B3) * dy * dx[0] + (B2 - B1) * dx[0] + (B3 - B1) * dy + B1;
+		RT1 = 510 + R1 + R4 - R2 - R3;
+		RT2 = 510 + R2 - R1;
+		RT3 = 510 + R3 - R1;
+		
+		GT1 = 510 + G1 + G4 - G2 - G3;
+		GT2 = 510 + G2 - G1;
+		GT3 = 510 + G3 - G1;
+		
+		
+		BT1 = 510 + B1 + B4 - B2 - B3;
+		BT2 = 510 + B2 - B1;
+		BT3 = 510 + B3 - B1;
+		
+		left = f[dx[0]];
+		
+		*offset ++ = *(left + *(right + RT1) + RT2) + *(right + RT3) + R1;
+		*offset ++ = *(left + *(right + GT1) + GT2) + *(right + GT3) + G1;
+		*offset ++ = *(left + *(right + BT1) + BT2) + *(right + BT3) + B1;
+		
+		//*offset ++ = f[dx[0]][f[dy][RT1] + RT2] + f[dy][RT3] + R1;
+		//*offset ++ = f[dx[0]][f[dy][GT1] + GT2] + f[dy][GT3] + G1;
+		//*offset ++ = f[dx[0]][f[dy][BT1] + BT2] + f[dy][BT3] + B1;
+
+//		*offset ++ = (R1 + R4 - R2 - R3) * dy * dx[0] + (R2 - R1) * dx[0] + (R3 - R1) * dy + R1;
+//		*offset ++ = (G1 + G4 - G2 - G3) * dy * dx[0] + (G2 - G1) * dx[0] + (G3 - G1) * dy + G1;
+//		*offset ++ = (B1 + B4 - B2 - B3) * dy * dx[0] + (B2 - B1) * dx[0] + (B3 - B1) * dy + B1;
+		
 		for (x = 1; x != dest_x; ++ x)
 		{
 			if (three_fl_x[x] != three_fl_x[x - 1])
@@ -165,7 +211,18 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 				p = p + 3;
 				*((long long*)pp) = *((long long*)p);
 				*((long long*)qq) = *((long long*)(p + delta));
-				
+				RT1 = 510 + R1 + R4 - R2 - R3;
+				RT2 = 510 + R2 - R1;
+				RT3 = 510 + R3 - R1;
+	
+				GT1 = 510 + G1 + G4 - G2 - G3;
+				GT2 = 510 + G2 - G1;
+				GT3 = 510 + G3 - G1;
+	
+	
+				BT1 = 510 + B1 + B4 - B2 - B3;
+				BT2 = 510 + B2 - B1;
+				BT3 = 510 + B3 - B1;
 			}
 			
 			/*
@@ -174,11 +231,13 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 			*offset ++ = (B1 + B4 - B2 - B3) * dx[x] * dy + (B2 - B1) * dx[x] + (B3 - B1) * dy + B1;
 			*/
 			//k = &dx[x];
-			/*
-			*offset ++ = ((R1 + R4 - R2 - R3) * dy + (R2 - R1)) * (*k) + (R3 - R1) * dy + R1;
-			*offset ++ = ((G1 + G4 - G2 - G3) * dy + (G2 - G1)) * (*k) + (G3 - G1) * dy + G1;
-			*offset ++ = ((B1 + B4 - B2 - B3) * dy + (B2 - B1)) * (*k) + (B3 - B1) * dy + B1;
-			*/
+			left = f[dx[x]];
+			*offset ++ = *(left + *(right + RT1) + RT2) + *(right + RT3) + R1;
+			*offset ++ = *(left + *(right + GT1) + GT2) + *(right + GT3) + G1;
+			*offset ++ = *(left + *(right + BT1) + BT2) + *(right + BT3) + B1;
+			//*offset ++ = f[dx[x]][f[dy][RT1] + RT2] + f[dy][RT3] + R1;
+			//*offset ++ = f[dx[x]][f[dy][GT1] + GT2] + f[dy][GT3] + G1;
+			//*offset ++ = f[dx[x]][f[dy][BT1] + BT2] + f[dy][BT3] + B1;
 			
 		}
 		
