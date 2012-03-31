@@ -1,0 +1,25 @@
+Image Rescale, a task in Computer Architecture & Organization, for optimization code
+
+Algorithm:
+	Bilinear interpolation Method
+
+Subject to:
+	Disable the Compiler Optimazation
+	
+Goal:
+	To maximize the ratio(FPS) between the naive algorithm and your code
+
+
+For more details, please read the source code
+
+Author: Jian Li (ID:yinyanghu), an undergraduate student in Nanjing University, China
+E-mail: lijianxp2005@gmail.com
+Google Talk: lijianxp2005@gmail.com
+
+March 31, 2012:
+	Project is established!
+	Just for pushing these code to Github
+
+
+
+Jian Li, 2012
