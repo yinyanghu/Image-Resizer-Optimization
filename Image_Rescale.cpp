@@ -77,14 +77,14 @@ void imageOutput(unsigned char *im, int sx, int sy, const char *name);
 ** 一定要比slow_rescale()快哦！
 *****************************************************/
 
-int f[256][101];
+unsigned char f[101][256];
 
 
 void prepare()
 {
-	for (int i = 0; i < 256; ++ i)
-		for (int j = 0; j <= 100; ++ j)
-			f[i][j] = (i * j) / 100;
+	for (int i = 0; i <= 100; ++ i)
+		for (int j = 0; j < 256; ++ j)
+			f[i][j] = (unsigned char)((i * j) / 100);
 }
 
 unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x, int dest_y)
@@ -96,19 +96,17 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 	
 	
 	register double step_x, step_y;			// Step increase as per instructions above
-	register unsigned char R1, R2, R3, R4;		// Colours at the four neighbours
-	register unsigned char G1, G2, G3, G4;
-	register unsigned char B1, B2, B3, B4;
-	register unsigned int N1, N2, N3, N4;
-	register double RT1, GT1, BT1;			// Interpolated colours at T1 and T2
-	register double RT2, GT2, BT2;
-	register long long T1, T2;
-	register long long Color;
-	register unsigned char R, G, B, RR, GG, BB;			// Final colour at a destination pixel
-	register int x, y;				// Coordinates on destination image
+	register unsigned char R1, G1, B1, R2, G2, B2, empty1, empty2;		// Colours at the four neighbours
+	register unsigned char R3, G3, B3, R4, G4, B4, empty3, empty4;
+	register unsigned char RT1, GT1, BT1;			// Interpolated colours at T1 and T2
+	register unsigned char RT2, GT2, BT2;
+//	long long T1, T2;
+//	long long Color;
+	register unsigned char R, G, B;//, RR, GG, BB;			// Final colour at a destination pixel
+	register int x, y, xx, xxx;			// Coordinates on destination image
 	register double fx, fy;				// Corresponding coordinates on source image
-	register double dx, dy, temp_x, temp_y;				// Fractional component of source image coordinates
-	register int bias;
+	register int dy, temp_y;				// Fractional component of source image coordinates
+	register unsigned char *offset = dst;
 
 	step_x = (double)(src_x - 1)/(double)(dest_x - 1);
 	step_y = (double)(src_y - 1)/(double)(dest_y - 1);
@@ -116,68 +114,133 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 	//printf("%.5lf\n", step_x);
 	//printf("%.5lf\n", step_y);
 	
-	register int fl_x, fl_y;
-//	register int cl_x, cl_y;
+	static int dx[HD_Xres], fl_x[HD_Xres], temp_x[HD_Xres], three_fl_x[HD_Xres];
+	
+	register int fl_y;
+//	int cl_x, cl_y;
 	register int k;
-	register int delta = 3 * src_x;
+	register int delta = 3 * src_x - 6;
 	// Loop over destination image
-	fy = 0; bias = 0;
+	register unsigned char *p;
+	register unsigned char *q;
+	fx = 0;
+	
+	for (int i = 0; i < dest_x; ++ i)
+	{
+		fx += step_x;
+		fl_x[i] = int(fx);
+		dx[i] = int((fx - fl_x[i]) * 100);
+		three_fl_x[i] = 3 * fl_x[i];
+		temp_x[i] = 100 - dx[i];
+	}
+	fy = 0;
 	for (y = 0; y < dest_y; ++ y)
 	{
-		fx = 0;
-		for (x = 0; x < dest_x; ++ x)
+		//fx = 0;
+		
+		fl_y = int(fy);
+		dy = int((fy - fl_y) * 100);
+		temp_y = 100 - dy;
+		q = src + 3 * src_x * fl_y;
+	
+	
+	
+		p = q + three_fl_x[0];
+		R1 = *p ++;
+		G1 = *p ++;
+		B1 = *p ++;
+		R2 = *p ++;
+		G2 = *p ++;
+		B2 = *p ++;
+		p = p + delta;
+		R3 = *p ++;
+		G3 = *p ++;
+		B3 = *p ++;
+		R4 = *p ++;
+		G4 = *p ++;
+		B4 = *p ++;
+		RT1 = f[dx[0]][R2] + f[temp_x[0]][R1];
+		GT1 = f[dx[0]][G2] + f[temp_x[0]][G1];
+		BT1 = f[dx[0]][B2] + f[temp_x[0]][B1];
+		RT2 = f[dx[0]][R4] + f[temp_x[0]][R3];
+		GT2 = f[dx[0]][G4] + f[temp_x[0]][G3];
+		BT2 = f[dx[0]][B4] + f[temp_x[0]][B3];
+		R = f[dy][RT2] + f[temp_y][RT1];
+		G = f[dy][GT2] + f[temp_y][GT1];
+		B = f[dy][BT2] + f[temp_y][BT1];
+		*offset ++ = R;
+		*offset ++ = G;
+		*offset ++ = B;	
+		for (x = 1; x < dest_x; ++ x)
 		{
-			
+			if (three_fl_x[x] != three_fl_x[x - 1])
+			{
 			// *(R)=*(image+((x+(y*sx))*3)+0);
 			// *(G)=*(image+((x+(y*sx))*3)+1);
 			// *(B)=*(image+((x+(y*sx))*3)+2);
-			
-			fl_x = int(fx); fl_y = int(fy);
-			dx = fx - fl_x;
-			dy = fy - fl_y;
-			
+
+		//	fl_x = int(fx);
+		//	dx = int((fx - fl_x) * 100);
+
+
 			//cl_x = fl_x + 1; cl_y = fl_y + 1;
 			//fl_x = floor(fx); fl_y = floor(fy);
 			//cl_x = ceil(fx); cl_y = ceil(fy);
 			
-			k = (fl_x + (src_x * fl_y)) * 3;
 //			N1 = *(unsigned int*)(src + k);
 
-			R1 = src[k];
-			G1 = src[k + 1];
-			B1 = src[k + 2];
+			
+			p = q + three_fl_x[x];
+//			printf("%d  ", src_x * fl_y * 3 + three_fl_x[x]);
+			asm("hlt");
+			R1 = *p ++;
+			G1 = *p ++;
+			B1 = *p ++;
+			asm("hlt");
+//			R1 = src[k];
+//			G1 = src[k + 1];
+//			B1 = src[k + 2];
 //			if (N1 != (long long)src[k] + (src[k + 1] << 8) + (long long)(src[k + 2] << 16) + ((long long)src[k + 3] << 24))
 //				printf("***************************\n");
 //			getPixel(src, floor(fx), floor(fy), src_x, &R1, &G1, &B1);	// get N1 colours
 //			N2 = *(unsigned int*)(src + k + 3);
-			R2 = src[k + 3];
-			G2 = src[k + 4];
-			B2 = src[k + 5];
-
+//			R2 = src[k + 3];
+//			G2 = src[k + 4];
+//			B2 = src[k + 5];
+			R2 = *p ++;
+			G2 = *p ++;
+			B2 = *p ++;
+			
+			
 //			getPixel(src, ceil(fx), floor(fy), src_x, &R2, &G2, &B2);	// get N2 colours
 
-			k = k + delta;
+			p = p + delta;
+			R3 = *p ++;
+			G3 = *p ++;
+			B3 = *p ++;
 //			N3 = *(unsigned int*)(src + k);
-			R3 = src[k];
-			G3 = src[k + 1];
-			B3 = src[k + 2];
-
+//			R3 = src[k];
+//			G3 = src[k + 1];
+//			B3 = src[k + 2];
+			R4 = *p ++;
+			G4 = *p ++;
+			B4 = *p ++;
 //			getPixel(src, floor(fx), ceil(fy), src_x, &R3, &G3, &B3);	// get N3 colours
 //			N4 = *(unsigned int*)(src + k + 3);
 
-			R4 = src[k + 3];
-			G4 = src[k + 4];
-			B4 = src[k + 5];
+//			R4 = src[k + 3];
+//			G4 = src[k + 4];
+//			B4 = src[k + 5];
 
 //			getPixel(src, ceil(fx), ceil(fy), src_x, &R4, &G4, &B4);	// get N4 colours
 			 // Interpolate to get T1 and T2 colours
 			
-			temp_x = 1 - dx;
-			temp_y = 1 - dy;
+			
+
 
 //			T1 = ((long long)N2 + N1) >> 1;
-//			T2 = ((long long)N3 + N4) >> 1;
 /*
+//			T2 = ((long long)N3 + N4) >> 1;
 			RT1 = (R2 + R1) >> 1;
 			GT1 = (G2 + G1) >> 1;
 			BT1 = (B2 + B1) >> 1;
@@ -185,23 +248,24 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 			GT2 = (G4 + G3) >> 1;
 			BT2 = (B4 + B3) >> 1;
 */
-
-
+			xx = dx[x]; xxx = temp_x[x];
+/*
 			RT1 = (dx * R2) + temp_x * R1;
 			GT1 = (dx * G2) + temp_x * G1;
 			BT1 = (dx * B2) + temp_x * B1;
 			RT2 = (dx * R4) + temp_x * R3;
 			GT2 = (dx * G4) + temp_x * G3;
 			BT2 = (dx * B4) + temp_x * B3;
-/*
-			RT1 = f[R2][dx] + f[R1][temp_x];
-			GT1 = f[G2][dx] + f[G1][temp_x];
-			BT1 = f[B2][dx] + f[B1][temp_x];
-			RT2 = f[R4][dx] + f[R3][temp_x];
-			GT2 = f[G4][dx] + f[G3][temp_x];
-			BT2 = f[B4][dx] + f[B3][temp_x];
+*/
+			RT1 = f[xx][R2] + f[xxx][R1];
+			GT1 = f[xx][G2] + f[xxx][G1];
+			BT1 = f[xx][B2] + f[xxx][B1];
+			RT2 = f[xx][R4] + f[xxx][R3];
+			GT2 = f[xx][G4] + f[xxx][G3];
+			BT2 = f[xx][B4] + f[xxx][B3];
+
 			// Obtain final colour by interpolating between T1 and T2
-*/			
+			
 //			Color = (unsigned int)(dy * T2 + (1 - dy) * T1);
 		//	printf("Color = %u\n", Color);
 
@@ -210,11 +274,11 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 //			G = (unsigned char)((GT2 + GT1) >> 1);
 //			B = (unsigned char)((BT2 + BT1) >> 1);
 
-
+/*
 			R = (unsigned char)((dy * RT2) + (temp_y * RT1));
 			G = (unsigned char)((dy * GT2) + (temp_y * GT1));
 			B = (unsigned char)((dy * BT2) + (temp_y * BT1));
-
+*/
 		//	printf("R = %d\n", int(R));
 		//	printf("G = %d\n", int(G));
 		//	printf("B = %d\n", int(B));
@@ -232,17 +296,21 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 			 *(image+((x+(y*sx))*3)+2)=B;
 */
 
-//			dst[bias] = (unsigned char)(f[RT2][dy] + f[RT1][temp_y]);
-///			dst[bias + 1] = (unsigned char)(f[GT2][dy] + f[GT1][temp_y]);
-//			dst[bias + 2] = (unsigned char)(f[BT2][dy] + f[BT1][temp_y]);
-			dst[bias] = R;
-			dst[bias + 1] = G;
-			dst[bias + 2] = B;
-			fx += step_x;
-			bias += 3;
+
+			R = f[dy][RT2] + f[temp_y][RT1];
+			G = f[dy][GT2] + f[temp_y][GT1];
+			B = f[dy][BT2] + f[temp_y][BT1];
+			}
+//	printf("******************************\n");		
+			*offset ++ = R;
+			*offset ++ = G;
+			*offset ++ = B;
+
+			//fx += step_x;
+			//bias += 3;
 		}
 		fy += step_y;
-	}	
+	}
 	return(dst);		
 }
 
@@ -358,7 +426,7 @@ unsigned char *slow_rescale(unsigned char *src, int src_x, int src_y, int dest_x
  unsigned char *dst;			// Destination image - must be allocated here! 
  int x,y;				// Coordinates on destination image
  double fx,fy;				// Corresponding coordinates on source image
- double dx,dy;				// Fractional component of source image coordinates
+ double dx,dy;			// Fractional component of source image coordinates
 
  dst=(unsigned char *)calloc(dest_x*dest_y*3,sizeof(unsigned char));   // Allocate and clear destination image
  if (!dst) return(NULL);					       // Unable to allocate image
