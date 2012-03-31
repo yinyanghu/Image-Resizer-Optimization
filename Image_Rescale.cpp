@@ -92,8 +92,8 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 	register unsigned int N1, N2, N3, N4;
 	register unsigned int RT1, GT1, BT1;			// Interpolated colours at T1 and T2
 	register unsigned int RT2, GT2, BT2;
-	register unsigned int T1, T2;
-	register unsigned int Color;
+	register long long T1, T2;
+	register long long Color;
 	register unsigned char R, G, B, RR, GG, BB;			// Final colour at a destination pixel
 	register int x, y;				// Coordinates on destination image
 	register float fx, fy;				// Corresponding coordinates on source image
@@ -135,6 +135,8 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 			R1 = src[k];
 			G1 = src[k + 1];
 			B1 = src[k + 2];
+//			if (N1 != (long long)src[k] + (src[k + 1] << 8) + (long long)(src[k + 2] << 16) + ((long long)src[k + 3] << 24))
+//				printf("***************************\n");
 //			getPixel(src, floor(fx), floor(fy), src_x, &R1, &G1, &B1);	// get N1 colours
 //			N2 = *(unsigned int*)(src + k + 3);
 			R2 = src[k + 3];
@@ -161,10 +163,10 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 			
 //			temp_x = 1 - dx;
 //			temp_y = 1 - dy;
-/*
-			T1 = (N2 + N1) >> 1;
-			T2 = (N3 + N4) >> 1;
-*/
+
+//			T1 = ((long long)N2 + N1) >> 1;
+//			T2 = ((long long)N3 + N4) >> 1;
+
 			RT1 = (R2 + R1) >> 1;
 			GT1 = (G2 + G1) >> 1;
 			BT1 = (B2 + B1) >> 1;
@@ -186,10 +188,10 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 //			Color = (unsigned int)(dy * T2 + (1 - dy) * T1);
 		//	printf("Color = %u\n", Color);
 
-//			Color = (T1 + T2) >> 1;
-			R = (unsigned char)((RT2 + RT1) >> 1);
-			G = (unsigned char)((GT2 + GT1) >> 1);
-			B = (unsigned char)((BT2 + BT1) >> 1);
+//			Color = (N1 + N2 + N3 + N4);
+//			R = (unsigned char)((RT2 + RT1) >> 1);
+//			G = (unsigned char)((GT2 + GT1) >> 1);
+//			B = (unsigned char)((BT2 + BT1) >> 1);
 
 /*
 			R = (unsigned char)((dy * RT2) + (temp_y * RT1));
@@ -212,9 +214,13 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 			 *(image+((x+(y*sx))*3)+1)=G;
 			 *(image+((x+(y*sx))*3)+2)=B;
 */
-			dst[bias] = R;
-			dst[bias + 1] = G;
-			dst[bias + 2] = B;
+
+			dst[bias] = (unsigned char)((RT2 + RT1) >> 1);
+			dst[bias + 1] = (unsigned char)((GT2 + GT1) >> 1);
+			dst[bias + 2] = (unsigned char)((BT2 + BT1) >> 1);
+//			dst[bias] = R;
+//			dst[bias + 1] = G;
+//			dst[bias + 2] = B;
 			fx += step_x;
 			bias += 3;
 		}
