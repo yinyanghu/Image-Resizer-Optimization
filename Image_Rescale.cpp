@@ -80,9 +80,93 @@ void imageOutput(unsigned char *im, int sx, int sy, const char *name);
 unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x, int dest_y)
 {
 	unsigned char *dst;			// Destination image - must be allocated here! 
-	dst=(unsigned char *)calloc(dest_x*dest_y*3,sizeof(unsigned char));   // Allocate and clear destination image
+	dst = (unsigned char *)calloc(dest_x * dest_y * 3, sizeof(unsigned char));   // Allocate and clear destination image
 	if (!dst) return(NULL);					       // Unable to allocate image
 	
+	
+	
+	register double step_x, step_y;			// Step increase as per instructions above
+	register unsigned char R1, R2, R3, R4;		// Colours at the four neighbours
+	register unsigned char G1, G2, G3, G4;
+	register unsigned char B1, B2, B3, B4;
+	register double RT1, GT1, BT1;			// Interpolated colours at T1 and T2
+	register double RT2, GT2, BT2;
+	register unsigned char R, G, B;			// Final colour at a destination pixel
+	register int x, y;				// Coordinates on destination image
+	register double fx, fy;				// Corresponding coordinates on source image
+	register double dx, dy;				// Fractional component of source image coordinates
+
+
+	step_x = (double)(src_x - 1)/(double)(dest_x - 1);
+	step_y = (double)(src_y - 1)/(double)(dest_y - 1);
+	
+	//printf("%.5lf\n", step_x);
+	//printf("%.5lf\n", step_y);
+	
+	register int fl_x, fl_y;
+//	register int cl_x, cl_y;
+	register int k;
+	// Loop over destination image
+	fy = 0;
+	for (y = 0; y < dest_y; ++ y)
+	{
+		fx = 0;
+		for (x = 0; x < dest_x; ++ x)
+		{
+			dx = fx - (int)fx;
+			dy = fy - (int)fy;
+			
+			// *(R)=*(image+((x+(y*sx))*3)+0);
+			// *(G)=*(image+((x+(y*sx))*3)+1);
+			// *(B)=*(image+((x+(y*sx))*3)+2);
+			
+			fl_x = int(fx); fl_y = int(fy);
+			//cl_x = fl_x + 1; cl_y = fl_y + 1;
+			//fl_x = floor(fx); fl_y = floor(fy);
+			//cl_x = ceil(fx); cl_y = ceil(fy);
+			
+			k = (fl_x + (src_x * fl_y)) * 3;
+			R1 = src[k];
+			G1 = src[k + 1];
+			B1 = src[k + 2];
+//			getPixel(src, floor(fx), floor(fy), src_x, &R1, &G1, &B1);	// get N1 colours
+
+			R2 = src[k + 3];
+			G2 = src[k + 4];
+			B2 = src[k + 5];
+
+//			getPixel(src, ceil(fx), floor(fy), src_x, &R2, &G2, &B2);	// get N2 colours
+
+			k = k + 3 * src_x;	
+			R3 = src[k];
+			G3 = src[k + 1];
+			B3 = src[k + 2];
+
+//			getPixel(src, floor(fx), ceil(fy), src_x, &R3, &G3, &B3);	// get N3 colours
+
+
+			R4 = src[k + 3];
+			G4 = src[k + 4];
+			B4 = src[k + 5];
+
+//			getPixel(src, ceil(fx), ceil(fy), src_x, &R4, &G4, &B4);	// get N4 colours
+			 // Interpolate to get T1 and T2 colours
+			RT1 = (dx * R2) + (1 - dx) * R1;
+			GT1 = (dx * G2) + (1 - dx) * G1;
+			BT1 = (dx * B2) + (1 - dx) * B1;
+			RT2 = (dx * R4) + (1 - dx) * R3;
+			GT2 = (dx * G4) + (1 - dx) * G3;
+			BT2 = (dx * B4) + (1 - dx) * B3;
+			// Obtain final colour by interpolating between T1 and T2
+			R = (unsigned char)((dy * RT2) + ((1 - dy) * RT1));
+			G = (unsigned char)((dy * GT2) + ((1 - dy) * GT1));
+			B = (unsigned char)((dy * BT2) + ((1 - dy) * BT1));
+			// Store the final colour
+			setPixel(dst, x, y, dest_x, R, G, B);
+			fx += step_x;
+		}
+		fy += step_y;
+	}	
 	return(dst);		
 }
 
@@ -288,7 +372,7 @@ int main(int argc, char *argv[])
  // Time plain slow routine
  t1=t0=time(NULL);
  c_a=0;
- while(difftime(t1,t0)<15.0)
+ while(difftime(t1,t0)<5.0)
  {
   dst=slow_rescale(src,sx,sy,HD_Xres,HD_Yres);
   if (dst) {c_a++; free(dst);} else break;
@@ -307,7 +391,7 @@ int main(int argc, char *argv[])
  // Time your fast routine
  t3=t2=time(NULL);
  c_b=0;
- while(difftime(t3,t2)<15.0)
+ while(difftime(t3,t2)<5.0)
  {
   dst=fast_rescale(src,sx,sy,HD_Xres,HD_Yres);
   if (dst) {c_b++; free(dst);} else break;
