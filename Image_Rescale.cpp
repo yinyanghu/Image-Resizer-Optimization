@@ -117,32 +117,31 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 
 	register unsigned char *pp;
 
-	pp = (unsigned char *)calloc(8, sizeof(unsigned char));
+	pp = (unsigned char *)calloc(20, sizeof(unsigned char));
 
 	register unsigned char *qq;
 
-	qq = (unsigned char *)calloc(8, sizeof(unsigned char));
+	qq = pp + 8;
 
 	register unsigned char *xx;
 
-	xx = (unsigned char *)calloc(4, sizeof(unsigned char));
+	xx = pp + 16;
 
 
 
-	register unsigned char *R1, *G1, *B1, *R2, *G2, *B2;
-	register unsigned char *R3, *G3, *B3, *R4, *G4, *B4;
-	register unsigned char *RT, *GT, *BT;
+//	register unsigned char *R1, *G1, *B1, *R2, *G2, *B2;
+//	register unsigned char *R3, *G3, *B3, *R4, *G4, *B4;
+//	register unsigned char *RT, *GT, *BT;
 
-	R1 = pp; G1 = pp + 1; B1 = pp + 2; R2 = pp + 3; G2 = pp + 4; B2 = pp + 5;
-	R3 = qq; G3 = qq + 1; B3 = qq + 2; R4 = qq + 3; G4 = qq + 4; B4 = qq + 5;
-	RT = xx; GT = xx + 1; BT = xx + 2;
+//	R1 = pp; G1 = pp + 1; B1 = pp + 2; R2 = pp + 3; G2 = pp + 4; B2 = pp + 5;
+//	R3 = qq; G3 = qq + 1; B3 = qq + 2; R4 = qq + 3; G4 = qq + 4; B4 = qq + 5;
+//	RT = xx; GT = xx + 1; BT = xx + 2;
 
-	//unsigned char R1, G1, B1, R2, G2, B2, empty1, empty2;		// Colours at the four neighbours
-	//unsigned char R3, G3, B3, R4, G4, B4, empty3, empty4;
-	//long long T1, T2;
-	//long long Color;
-	//regist
-	unsigned char R, G, B;//, RR, GG, BB;			// Final colour at a destination pixel
+//	unsigned char R1, G1, B1, R2, G2, B2, empty1, empty2;		// Colours at the four neighbours
+//	unsigned char R3, G3, B3, R4, G4, B4, empty3, empty4;
+//	long long T1, T2;
+//	long long Color;
+//	unsigned char R, G, B;//, RR, GG, BB;			// Final colour at a destination pixel
 	register int x, y;		// Coordinates on destination image
 	register double fx, fy;				// Corresponding coordinates on source image
 	register int dy, temp_y;				// Fractional component of source image coordinates
@@ -151,7 +150,6 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 	step_x = (double)(src_x - 1)/(double)(dest_x - 1);
 	step_y = (double)(src_y - 1)/(double)(dest_y - 1);
 
-//	asm("kkk");
 
 //	R1 = 1; G1 = 1; B1 = 1; R2 = 1; G2 = 1; B2 = 1; empty1 = 1; empty2 = 1;
 //	R3 = 1; G3 = 1; B3 = 1; R4 = 1; G4 = 1; B4 = 1; empty3 = 1; empty4 = 1;
@@ -160,25 +158,19 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 //	&R1; &G1; &B1; &R2; &G2; &B2; &empty1; &empty2;
 //	&R3; &G3; &B3; &R4; &G4; &B4; &empty3; &empty4;
 //	&RT; &GT; &BT; &empty5;// &RT2; &GT2; &BT2; &empty6;
-//	asm("kkk");
 	
 //	printf("0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n", &R1, &G1, &B1, &R2, &G2, &B2, &empty1, &empty2);
 //	printf("0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n", &R3, &G3, &B3, &R4, &G4, &B4, &empty3, &empty4);
 //	printf("0x%08x 0x%08x 0x%08x 0x%08x\n", &RT, &GT, &BT, &empty5);
 	
 	
-	//printf("%.5lf\n", step_x);
-	//printf("%.5lf\n", step_y);
 	
 	static int dx[HD_Xres], fl_x[HD_Xres], temp_x[HD_Xres], three_fl_x[HD_Xres];
 	
 	register int fl_y, last;
-//	int cl_x, cl_y;
-//	register int k;
 	register int delta = 3 * src_x;
 	// Loop over destination image
 	
-	//register unsigned char *yy = &RT2;
 //	printf("0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n", &R1, &G1, &B1, &R2, &G2, &B2, &RT1, &GT1);
 //	printf("0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n", &R3, &G3, &B3, &R4, &G4, &B4, &RT2, &GT2);
 	
@@ -198,9 +190,9 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 	cur = rec_first; next = rec_second;
 	*((long long*)pp) = *((long long*)q);
 
-	*RT = f[dx[0]][*R2] + f[temp_x[0]][*R1];
-	*GT = f[dx[0]][*G2] + f[temp_x[0]][*G1];
-	*BT = f[dx[0]][*B2] + f[temp_x[0]][*B1];
+	*xx = f[dx[0]][*(pp + 3)] + f[temp_x[0]][*pp];
+	*(xx + 1) = f[dx[0]][*(pp + 4)] + f[temp_x[0]][*(pp + 1)];
+	*(xx + 2) = f[dx[0]][*(pp + 5)] + f[temp_x[0]][*(pp + 2)];
 	cur[0].k = *((unsigned int*)xx);
 	p = q;
 
@@ -211,16 +203,16 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 		{
 			p = p + 3;
 			*((long long*)pp) = *((long long*)p);
-			//*((long long*)qq) = *((long long*)(p + delta));
+//			*((long long*)qq) = *((long long*)(p + delta));
 		}
-		/*
+/*
 		RT1 = f[dx[x]][R2] + f[temp_x[x]][R1];
 		GT1 = f[dx[x]][G2] + f[temp_x[x]][G1];
 		BT1 = f[dx[x]][B2] + f[temp_x[x]][B1];
-		*/
-		*RT = f[dx[x]][*R2] + f[temp_x[x]][*R1];
-		*GT = f[dx[x]][*G2] + f[temp_x[x]][*G1];
-		*BT = f[dx[x]][*B2] + f[temp_x[x]][*B1];
+*/
+		*xx = f[dx[x]][*(pp + 3)] + f[temp_x[x]][*pp];
+		*(xx + 1) = f[dx[x]][*(pp + 4)] + f[temp_x[x]][*(pp + 1)];
+		*(xx + 2) = f[dx[x]][*(pp + 5)] + f[temp_x[x]][*(pp + 2)];
 		
 		cur[x].k = *((unsigned int*)xx);
 	}
@@ -236,16 +228,16 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 		if (last != fl_y)
 		{
 			p = q + delta;
-			//*((long long*)pp) = *((long long*)p);
+//			*((long long*)pp) = *((long long*)p);
 			*((long long*)qq) = *((long long*)p);
 		
-			//RT1 = f[dx[0]][R2] + f[temp_x[0]][R1];
-			//GT1 = f[dx[0]][G2] + f[temp_x[0]][G1];
-			//BT1 = f[dx[0]][B2] + f[temp_x[0]][B1];
+//			RT1 = f[dx[0]][R2] + f[temp_x[0]][R1];
+//			GT1 = f[dx[0]][G2] + f[temp_x[0]][G1];
+//			BT1 = f[dx[0]][B2] + f[temp_x[0]][B1];
 			
-			*RT = f[dx[0]][*R4] + f[temp_x[0]][*R3];
-			*GT = f[dx[0]][*G4] + f[temp_x[0]][*G3];
-			*BT = f[dx[0]][*B4] + f[temp_x[0]][*B3];
+			*xx = f[dx[0]][*(qq + 3)] + f[temp_x[0]][*qq];
+			*(xx + 1) = f[dx[0]][*(qq + 4)] + f[temp_x[0]][*(qq + 1)];
+			*(xx + 2) = f[dx[0]][*(qq + 5)] + f[temp_x[0]][*(qq + 2)];
 			
 			next[0].k = *((unsigned int*)xx);
 			
@@ -254,17 +246,17 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 				if (three_fl_x[x] != three_fl_x[x - 1])
 				{
 					p = p + 3;
-					//*((long long*)pp) = *((long long*)p);
+//					*((long long*)pp) = *((long long*)p);
 					*((long long*)qq) = *((long long*)p);
 				}
-				/*
+/*
 				RT1 = f[dx[x]][R2] + f[temp_x[x]][R1];
 				GT1 = f[dx[x]][G2] + f[temp_x[x]][G1];
 				BT1 = f[dx[x]][B2] + f[temp_x[x]][B1];
-				*/
-				*RT = f[dx[x]][*R4] + f[temp_x[x]][*R3];
-				*GT = f[dx[x]][*G4] + f[temp_x[x]][*G3];
-				*BT = f[dx[x]][*B4] + f[temp_x[x]][*B3];
+*/
+				*xx = f[dx[x]][*(qq + 3)] + f[temp_x[x]][*qq];
+				*(xx + 1) = f[dx[x]][*(qq + 4)] + f[temp_x[x]][*(qq + 1)];
+				*(xx + 2) = f[dx[x]][*(qq + 5)] + f[temp_x[x]][*(qq + 2)];
 				
 				next[x].k = *((unsigned int*)xx);
 			}
@@ -282,8 +274,6 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 	}
 
 	free(pp);
-	free(qq);
-	free(xx);
 
 
 	return(dst);		
@@ -493,7 +483,7 @@ int main(int argc, char *argv[])
  // Time plain slow routine
  t1=t0=time(NULL);
  c_a=0;
- while(difftime(t1,t0)<3.0)
+ while(difftime(t1,t0)<15.0)
  {
   dst=slow_rescale(src,sx,sy,HD_Xres,HD_Yres);
   if (dst) {c_a++; free(dst);} else break;
