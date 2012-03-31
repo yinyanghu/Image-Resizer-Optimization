@@ -59,7 +59,6 @@
 #include<math.h>
 #include<string.h>
 #include<time.h>
-
 /*
   Function prototypes
 */
@@ -153,62 +152,15 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 	fy = 0;
 	for (y = 0; y < dest_y; ++ y)
 	{
-		//fx = 0;
-		
 		fl_y = int(fy);
 		dy = int((fy - fl_y) * 100);
 		temp_y = 100 - dy;
 		q = src + 3 * src_x * fl_y;
-	
-	
-	
+
 		p = q + three_fl_x[0];
-		//*pp = *((long long*)p);
 		*((long long*)pp) = *((long long*)p);
-		//if (G1 != *(p + 16)) printf("**************\n");
-		/*
-		if (*(p) != R1)
-			printf("R1 = %d %d %d\n", *p, R1, *pp);
-		if (*(p + 1) != G1)
-			printf("G1 = %d %d %d\n", *(p + 1), G1, *(pp + 1));
-		if (*(p + 2) != B1)
-			printf("B1 = %d %d %d\n", *(p + 2), B1, *(pp + 2));
-		if (*(p + 3) != R2)
-			printf("R2 = %d %d %d\n", *(p + 3), R2, *(pp + 3));
-		if (*(p + 4) != G2)
-			printf("G2 = %d %d %d\n", *(p + 4), G2, *(pp + 4));
-		if (*(p + 5) != B2)
-			printf("B2 = %d %d %d\n", *(p + 5), B2, *(pp + 5));
-			*/
-		/*
-		p ++;
-		p ++;
-		p ++;
-		p ++;
-		p ++;
-		p ++;
-		*/
-		//p = p + 6;
-		//p = p + delta;
-		//asm("hlt");
 		*((long long*)qq) = *((long long*)(p + delta));
-		//asm("hlt");
-		/*
 		
-		if (*(p) != R3)
-			printf("R3 = %d %d %d\n", *p, R3, *qq);
-		if (*(p + 1) != G3)
-			printf("G3 = %d %d %d\n", *(p + 1), G3, *(qq + 1));
-		if (*(p + 2) != B3)
-			printf("B3 = %d %d %d\n", *(p + 2), B3, *(qq + 2));
-		if (*(p + 3) != R4)
-			printf("R4 = %d %d %d\n", *(p + 3), R4, *(qq + 3));
-		if (*(p + 4) != G4)
-			printf("G4 = %d %d %d\n", *(p + 4), G4, *(qq + 4));
-		if (*(p + 5) != B4)
-			printf("B4 = %d %d %d\n", *(p + 5), B4, *(qq + 5));	
-		
-		*/
 		RT1 = f[dx[0]][R2] + f[temp_x[0]][R1];
 		GT1 = f[dx[0]][G2] + f[temp_x[0]][G1];
 		BT1 = f[dx[0]][B2] + f[temp_x[0]][B1];
@@ -218,6 +170,7 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 		R = f[dy][RT2] + f[temp_y][RT1];
 		G = f[dy][GT2] + f[temp_y][GT1];
 		B = f[dy][BT2] + f[temp_y][BT1];
+		
 		*offset ++ = R;
 		*offset ++ = G;
 		*offset ++ = B;
@@ -225,175 +178,11 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 		{
 			if (three_fl_x[x] != three_fl_x[x - 1])
 			{
-
-			// *(R)=*(image+((x+(y*sx))*3)+0);
-			// *(G)=*(image+((x+(y*sx))*3)+1);
-			// *(B)=*(image+((x+(y*sx))*3)+2);
-
-		//	fl_x = int(fx);
-		//	dx = int((fx - fl_x) * 100);
-
-
-			//cl_x = fl_x + 1; cl_y = fl_y + 1;
-			//fl_x = floor(fx); fl_y = floor(fy);
-			//cl_x = ceil(fx); cl_y = ceil(fy);
-			
-//			N1 = *(unsigned int*)(src + k);
-
-			
-//			p = q + three_fl_x[x];
-//			printf("0x%08x\n", p);
-			p = p + 3;
-			//*pp = *((long long*)p);
-			*((long long*)pp) = *((long long*)p);
-			/*
-			if (*(p) != R1)
-				printf("R1 = %d %d %d\n", *p, R1, *pp);
-			if (*(p + 1) != G1)
-				printf("G1 = %d %d %d\n", *(p + 1), G1, *(pp + 1));
-			if (*(p + 2) != B1)
-				printf("B1 = %d %d %d\n", *(p + 2), B1, *(pp + 2));
-			if (*(p + 3) != R2)
-				printf("R2 = %d %d %d\n", *(p + 3), R2, *(pp + 3));
-			if (*(p + 4) != G2)
-				printf("G2 = %d %d %d\n", *(p + 4), G2, *(pp + 4));
-			if (*(p + 5) != B2)
-				printf("B2 = %d %d %d\n", *(p + 5), B2, *(pp + 5));				
-			*/
-/*
-//			printf("%d  ", src_x * fl_y * 3 + three_fl_x[x]);
-			R1 = *p ++;
-			G1 = *p ++;
-			B1 = *p ++;
-
-//			R1 = src[k];
-//			G1 = src[k + 1];
-//			B1 = src[k + 2];
-//			if (N1 != (long long)src[k] + (src[k + 1] << 8) + (long long)(src[k + 2] << 16) + ((long long)src[k + 3] << 24))
-//				printf("***************************\n");
-//			getPixel(src, floor(fx), floor(fy), src_x, &R1, &G1, &B1);	// get N1 colours
-//			N2 = *(unsigned int*)(src + k + 3);
-//			R2 = src[k + 3];
-//			G2 = src[k + 4];
-//			B2 = src[k + 5];
-			R2 = *p ++;
-			G2 = *p ++;
-			B2 = *p ++;
-*/
-			
-//			getPixel(src, ceil(fx), floor(fy), src_x, &R2, &G2, &B2);	// get N2 colours
-/*
-		p ++;
-		p ++;
-		p ++;
-		p ++;
-		p ++;
-		p ++;
-	*/
-		//p = p + 6;
-		
-			//p = p + delta;
-			//*qq = *((long long*)p);
-			*((long long*)qq) = *((long long*)(p + delta));
-			
-			
-			/*
-			if (*(p) != R3)
-				printf("R3 = %d %d %d\n", *p, R3, *qq);
-			if (*(p + 1) != G3)
-				printf("G3 = %d %d %d\n", *(p + 1), G3, *(qq + 1));
-			if (*(p + 2) != B3)
-				printf("B3 = %d %d %d\n", *(p + 2), B3, *(qq + 2));
-			if (*(p + 3) != R4)
-				printf("R4 = %d %d %d\n", *(p + 3), R4, *(qq + 3));
-			if (*(p + 4) != G4)
-				printf("G4 = %d %d %d\n", *(p + 4), G4, *(qq + 4));
-			if (*(p + 5) != B4)
-				printf("B4 = %d %d %d\n", *(p + 5), B4, *(qq + 5));	
-		*/
-			
-			
-/*
-			R3 = *p ++;
-			G3 = *p ++;
-			B3 = *p ++;
-//			N3 = *(unsigned int*)(src + k);
-//			R3 = src[k];
-//			G3 = src[k + 1];
-//			B3 = src[k + 2];
-			R4 = *p ++;
-			G4 = *p ++;
-			B4 = *p ++;
-//			getPixel(src, floor(fx), ceil(fy), src_x, &R3, &G3, &B3);	// get N3 colours
-//			N4 = *(unsigned int*)(src + k + 3);
-
-//			R4 = src[k + 3];
-//			G4 = src[k + 4];
-//			B4 = src[k + 5];
-
-//			getPixel(src, ceil(fx), ceil(fy), src_x, &R4, &G4, &B4);	// get N4 colours
-			 // Interpolate to get T1 and T2 colours
-			
-			
-*/
-
-//			T1 = ((long long)N2 + N1) >> 1;
-/*
-//			T2 = ((long long)N3 + N4) >> 1;
-			RT1 = (R2 + R1) >> 1;
-			GT1 = (G2 + G1) >> 1;
-			BT1 = (B2 + B1) >> 1;
-			RT2 = (R4 + R3) >> 1;
-			GT2 = (G4 + G3) >> 1;
-			BT2 = (B4 + B3) >> 1;
-*/
-			
-/*
-			RT1 = (dx * R2) + temp_x * R1;
-			GT1 = (dx * G2) + temp_x * G1;
-			BT1 = (dx * B2) + temp_x * B1;
-			RT2 = (dx * R4) + temp_x * R3;
-			GT2 = (dx * G4) + temp_x * G3;
-			BT2 = (dx * B4) + temp_x * B3;
-*/
-			
-
-			// Obtain final colour by interpolating between T1 and T2
-			
-//			Color = (unsigned int)(dy * T2 + (1 - dy) * T1);
-		//	printf("Color = %u\n", Color);
-
-//			Color = (N1 + N2 + N3 + N4);
-//			R = (unsigned char)((RT2 + RT1) >> 1);
-//			G = (unsigned char)((GT2 + GT1) >> 1);
-//			B = (unsigned char)((BT2 + BT1) >> 1);
-
-/*
-			R = (unsigned char)((dy * RT2) + (temp_y * RT1));
-			G = (unsigned char)((dy * GT2) + (temp_y * GT1));
-			B = (unsigned char)((dy * BT2) + (temp_y * BT1));
-*/
-		//	printf("R = %d\n", int(R));
-		//	printf("G = %d\n", int(G));
-		//	printf("B = %d\n", int(B));
-//			RR = (unsigned char)(Color & 11111111);
-			//GG = (unsigned char)(((Color >> 8)) & 11111111);
-		//	BB = (unsigned char)(((Color >> 16)) & 11111111);
-		//	printf("RR = %d\n", int(RR));
-		//	printf("GG = %d\n", int(GG));
-		//	printf("BB = %d\n", int(BB));
-			// Store the final colour
-//			setPixel(dst, x, y, dest_x, R, G, B);
-/*
-			 *(image+((x+(y*sx))*3)+0)=R;
-			 *(image+((x+(y*sx))*3)+1)=G;
-			 *(image+((x+(y*sx))*3)+2)=B;
-*/
-
-
-			
+				p = p + 3;
+				*((long long*)pp) = *((long long*)p);
+				*((long long*)qq) = *((long long*)(p + delta));
 			}
-//	printf("******************************\n");
+		//	asm("xxxx");
 			xx = dx[x]; xxx = temp_x[x];
 			RT1 = f[xx][R2] + f[xxx][R1];
 			GT1 = f[xx][G2] + f[xxx][G1];
@@ -404,12 +193,10 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 			R = f[dy][RT2] + f[temp_y][RT1];
 			G = f[dy][GT2] + f[temp_y][GT1];
 			B = f[dy][BT2] + f[temp_y][BT1];
+		//	asm("xxxx");
 			*offset ++ = R;
 			*offset ++ = G;
 			*offset ++ = B;
-
-			//fx += step_x;
-			//bias += 3;
 		}
 		fy += step_y;
 	}
