@@ -505,7 +505,7 @@ int main(int argc, char *argv[])
  // Time your fast routine
  t3=t2=time(NULL);
  c_b=0;
- while(difftime(t3,t2)<3.0)
+ while(difftime(t3,t2)<15.0)
  {
   dst=fast_rescale(src,sx,sy,HD_Xres,HD_Yres);
   if (dst) {c_b++; free(dst);} else break;
