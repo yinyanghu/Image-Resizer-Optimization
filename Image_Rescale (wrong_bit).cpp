@@ -82,52 +82,35 @@ void imageOutput(unsigned char *im, int sx, int sy, const char *name);
 unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x, int dest_y)
 {
 	
-	union pixel
-	{
-		unsigned int k;
-		unsigned char c[4];
-	};
+//	static unsigned char f[101][256];
 	
-	
-	
-	static unsigned char f[101][256];
-	
-	static pixel rec_first[HD_Xres], rec_second[HD_Xres];
-	
-	register unsigned char R1, G1, B1, R2, G2, B2, empty1, empty2; 
-	register unsigned char R3, G3, B3, R4, G4, B4, empty3, empty4;
-	register unsigned char RT, GT, BT, empty5;//, RT2, GT2, BT2, empty6;
-	
+//	register unsigned char R1, G1, B1, R2, G2, B2, RT1, GT1;
+//	register unsigned char R3, G3, B3, R4, G4, B4, RT2, GT2;
+	register long long color1, color2, color3, color4, color;	
 	unsigned char *dst;			// Destination image - must be allocated here! 
 	dst = (unsigned char *)calloc(dest_x * dest_y * 3, sizeof(unsigned char));   // Allocate and clear destination image
 	if (!dst) return(NULL);					       // Unable to allocate image
-	
-	for (int i = 0; i <= 100; ++ i)
-		for (int j = 0; j < 256; ++ j)
-			f[i][j] = (unsigned char)((i * j) / 100);
 	
 	register double step_x, step_y;			// Step increase as per instructions above
 	//unsigned char R1, G1, B1, R2, G2, B2, empty1, empty2;		// Colours at the four neighbours
 	//unsigned char R3, G3, B3, R4, G4, B4, empty3, empty4;
 //	long long T1, T2;
 //	long long Color;
-	//register unsigned char R, G, B;//, RR, GG, BB;			// Final colour at a destination pixel
-	register int x, y;		// Coordinates on destination image
-	register double fx, fy;				// Corresponding coordinates on source image
-	register int dy, temp_y;				// Fractional component of source image coordinates
+	register unsigned char R, G, B;//, RR, GG, BB;			// Final colour at a destination pixel
+	register int x, y, xx, xxx;			// Coordinates on destination image
+	double fx, fy;				// Corresponding coordinates on source image
+	register double dy;				// Fractional component of source image coordinates
 	register unsigned char *offset = dst;
-	register pixel *cur, *next, *ex;
+
 	step_x = (double)(src_x - 1)/(double)(dest_x - 1);
 	step_y = (double)(src_y - 1)/(double)(dest_y - 1);
-
 //	asm("kkk");
 //	R1 = 1; G1 = 1; B1 = 1; R2 = 1; G2 = 1; B2 = 1; RT1 = 1; GT1 = 1; BT1 = 1;
 //	R3 = 1; G3 = 1; B3 = 1; R4 = 1; G4 = 1; B4 = 1; RT2 = 1; GT2 = 1; BT2 = 1;
-	&R1; &G1; &B1; &R2; &G2; &B2; &empty1; &empty2;
-	&R3; &G3; &B3; &R4; &G4; &B4; &empty3; &empty4;
-	&RT; &GT; &BT; &empty5;// &RT2; &GT2; &BT2; &empty6;
+//	&R1; &G1; &B1; &R2; &G2; &B2; &RT1; &GT1;
+//	&R3; &G3; &B3; &R4; &G4; &B4; &RT2; &GT2;
 //	asm("kkk");
-	
+	color1 = color2 = color3 = color4 = 0;
 //	printf("0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n", &R1, &G1, &B1, &R2, &G2, &B2, &RT1, &GT1, &BT1);
 //	printf("0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n", &R3, &G3, &B3, &R4, &G4, &B4, &RT2, &GT2, &BT2);
 	
@@ -135,116 +118,99 @@ unsigned char *fast_rescale(unsigned char *src, int src_x, int src_y, int dest_x
 	//printf("%.5lf\n", step_x);
 	//printf("%.5lf\n", step_y);
 	
-	static int dx[HD_Xres], fl_x[HD_Xres], temp_x[HD_Xres], three_fl_x[HD_Xres];
+	static int fl_x[HD_Xres], three_fl_x[HD_Xres];
+	static double dx[HD_Xres], dxdy[HD_Xres];
 	
-	register int fl_y, last;
+	int fl_y;
 //	int cl_x, cl_y;
 //	register int k;
-	register int delta = 3 * src_x;
+	register const int delta = 3 * src_x;
 	// Loop over destination image
 	register unsigned char *p;
-	register unsigned char *q = src;
-	register unsigned char *pp = &R1;
-	register unsigned char *qq = &R3;
-	register unsigned char *xx = &RT;
-	//register unsigned char *yy = &RT2;
+	register unsigned char *q;
+	register unsigned char *pp;
+	
 //	printf("0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n", &R1, &G1, &B1, &R2, &G2, &B2, &RT1, &GT1);
 //	printf("0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n", &R3, &G3, &B3, &R4, &G4, &B4, &RT2, &GT2);
 	
 	fx = 0;
-
+	//double min = 10.1;
 	for (int i = 0; i != dest_x; ++ i)
 	{
 		fl_x[i] = int(fx);
-		dx[i] = int((fx - fl_x[i]) * 100);
+		dx[i] = double(int((fx - fl_x[i]) * 100)) / 100.0;
+		//if (dx[i] < min && dx[i] > 0.0001) min = dx[i];
 		three_fl_x[i] = 3 * fl_x[i];
-		temp_x[i] = 100 - dx[i];
 		fx += step_x;
 	}
+	//printf("%.5lf\n", min);
 	fy = 0;
-	
-	
-	cur = rec_first; next = rec_second;
-	*((long long*)pp) = *((long long*)q);
-	RT = f[dx[0]][R2] + f[temp_x[0]][R1];
-	GT = f[dx[0]][G2] + f[temp_x[0]][G1];
-	BT = f[dx[0]][B2] + f[temp_x[0]][B1];
-	cur[0].k = *((unsigned int*)xx);
-	p = q;
-	for (x = 1; x != dest_x; ++ x)
-	{
-		if (three_fl_x[x] != three_fl_x[x - 1])
-		{
-			p = p + 3;
-			*((long long*)pp) = *((long long*)p);
-			//*((long long*)qq) = *((long long*)(p + delta));
-		}
-		/*
-		RT1 = f[dx[x]][R2] + f[temp_x[x]][R1];
-		GT1 = f[dx[x]][G2] + f[temp_x[x]][G1];
-		BT1 = f[dx[x]][B2] + f[temp_x[x]][B1];
-		*/
-		RT = f[dx[x]][R2] + f[temp_x[x]][R1];
-		GT = f[dx[x]][G2] + f[temp_x[x]][G1];
-		BT = f[dx[x]][B2] + f[temp_x[x]][B1];
-		
-		cur[x].k = *((unsigned int*)xx);
-	}
-
-	
 	for (y = 0; y != dest_y; ++ y)
 	{
-		ex = cur; cur = next; next = ex;
 		fl_y = int(fy);
-		dy = int((fy - fl_y) * 100);
-		temp_y = 100 - dy;
-		
-		if (last != fl_y)
-		{
-			p = q + delta;
-			//*((long long*)pp) = *((long long*)p);
-			*((long long*)qq) = *((long long*)p);
-		
-			//RT1 = f[dx[0]][R2] + f[temp_x[0]][R1];
-			//GT1 = f[dx[0]][G2] + f[temp_x[0]][G1];
-			//BT1 = f[dx[0]][B2] + f[temp_x[0]][B1];
-			
-			RT = f[dx[0]][R4] + f[temp_x[0]][R3];
-			GT = f[dx[0]][G4] + f[temp_x[0]][G3];
-			BT = f[dx[0]][B4] + f[temp_x[0]][B3];
-			
-			next[0].k = *((unsigned int*)xx);
-			
-			for (x = 1; x != dest_x; ++ x)
-			{
-				if (three_fl_x[x] != three_fl_x[x - 1])
-				{
-					p = p + 3;
-					//*((long long*)pp) = *((long long*)p);
-					*((long long*)qq) = *((long long*)p);
-				}
-				/*
-				RT1 = f[dx[x]][R2] + f[temp_x[x]][R1];
-				GT1 = f[dx[x]][G2] + f[temp_x[x]][G1];
-				BT1 = f[dx[x]][B2] + f[temp_x[x]][B1];
-				*/
-				RT = f[dx[x]][R4] + f[temp_x[x]][R3];
-				GT = f[dx[x]][G4] + f[temp_x[x]][G3];
-				BT = f[dx[x]][B4] + f[temp_x[x]][B3];
-				
-				next[x].k = *((unsigned int*)xx);
-			}
-			q += delta;
+		dy = fy - fl_y;
+		q = src + 3 * src_x * fl_y;
 
-		}
-		for (x = 0; x != dest_x; ++ x)
+		p = q + three_fl_x[0];
+		//*((long long*)pp) = *((long long*)p);
+		//*((long long*)qq) = *((long long*)(p + delta));
+//		printf("%x %x %x\n", *p, *(p + 1), *(p + 2));
+
+		color1 = ((long long)(*p) << 32) + ((long long)(*(p + 1)) << 16) + *(p + 2);
+//		printf("%llx\n", color1);
+		color2 = ((long long)(*(p + 3)) << 32) + ((long long)(*(p + 4)) << 16) + *(p + 5);
+		pp = p + delta;
+		color3 = ((long long)(*pp) << 32) + ((long long)(*(pp + 1)) << 16) + *(pp + 2);
+		color4 = ((long long)(*(pp + 3)) << 32) + ((long long)(*(pp + 4)) << 16) + *(pp + 5);
+		
+		printf("%llx %llx %llx %llx\n", color1, color2, color3, color4);
+
+		
+		color = (color1 + color4 - color2 - color3) * dy * dx[0] + (color2 - color1) * dx[0] + (color3 - color1) * dy + color1;
+		printf("%llx\n", color);		
+		
+		//*offset ++ = (R1 + R4 - R2 - R3) * dy * dx[0] + (R2 - R1) * dx[0] + (R3 - R1) * dy + R1;
+		//*offset ++ = (G1 + G4 - G2 - G3) * dy * dx[0] + (G2 - G1) * dx[0] + (G3 - G1) * dy + G1;
+		//*offset ++ = (B1 + B4 - B2 - B3) * dy * dx[0] + (B2 - B1) * dx[0] + (B3 - B1) * dy + B1;
+		*offset ++ = (color >> 32) & 11111111;
+		*offset ++ = (color >> 16) & 11111111;
+		*offset ++ = color & 11111111;
+		
+		for (x = 1; x != dest_x; ++ x)
 		{
-			*offset ++ = f[temp_y][cur[x].c[0]] + f[dy][next[x].c[0]];
-			*offset ++ = f[temp_y][cur[x].c[1]] + f[dy][next[x].c[1]];
-			*offset ++ = f[temp_y][cur[x].c[2]] + f[dy][next[x].c[2]];
+			if (three_fl_x[x] != three_fl_x[x - 1])
+			{
+				p = p + 3;
+			//	*((long long*)pp) = *((long long*)p);
+			//	*((long long*)qq) = *((long long*)(p + delta));
+				color1 = ((long long)(*p) << 32) + ((long long)(*(p + 1)) << 16) + *(p + 2);
+				color2 = ((long long)(*(p + 3)) << 32) + ((long long)(*(p + 4)) << 16) + *(p + 5);
+				pp = p + delta;
+				color3 = ((long long)(*pp) << 32) + ((long long)(*(pp + 1)) << 16) + *(pp + 2);
+				color4 = ((long long)(*(pp + 3)) << 32) + ((long long)(*(pp + 4)) << 16) + *(pp + 5);		
+				//color = (color1 + color4 - color2 - color3) * dy * dx[0] + (color2 - color1) * dx[0] + (color3 - color1) * dy + color1;
+			}
+			
+			
+			color = (color1 + color4 - color2 - color3) * dy * dx[x] + (color2 - color1) * dx[x] + (color3 - color1) * dy + color1;
+			*offset ++ = (color >> 32) & 11111111;
+			*offset ++ = (color >> 16) & 11111111;
+			*offset ++ = color & 11111111;
+			/*
+			*offset ++ = (R1 + R4 - R2 - R3) * dx[x] * dy + (R2 - R1) * dx[x] + (R3 - R1) * dy + R1;
+			*offset ++ = (G1 + G4 - G2 - G3) * dx[x] * dy + (G2 - G1) * dx[x] + (G3 - G1) * dy + G1;
+			*offset ++ = (B1 + B4 - B2 - B3) * dx[x] * dy + (B2 - B1) * dx[x] + (B3 - B1) * dy + B1;
+			*/
+			//k = &dx[x];
+			/*
+			*offset ++ = ((R1 + R4 - R2 - R3) * dy + (R2 - R1)) * (*k) + (R3 - R1) * dy + R1;
+			*offset ++ = ((G1 + G4 - G2 - G3) * dy + (G2 - G1)) * (*k) + (G3 - G1) * dy + G1;
+			*offset ++ = ((B1 + B4 - B2 - B3) * dy + (B2 - B1)) * (*k) + (B3 - B1) * dy + B1;
+			*/
+			
 		}
+		
 		fy += step_y;
-		last = fl_y;
 	}
 	return(dst);		
 }
@@ -512,7 +478,7 @@ int main(int argc, char *argv[])
 unsigned char *readPPMimage(const char *filename, int *sx, int *sy)
 {
  // Reads an image from a .ppm file. A .ppm file is a very simple image representation
- // format with a text header followed by the binary RGB data at 24bits per pixel.
+ // format with a text header followed by the binary RGB data at 32bits per pixel.
  // The header has the following form:
  //
  // P6
@@ -534,7 +500,7 @@ unsigned char *readPPMimage(const char *filename, int *sx, int *sy)
  //       way this file is accessed if the images are being corrupted on read
  //       on Windows.
  //
- // readPPMdata converts the image colour information to floating point. This is so that
+ // readPPMdata converts the image colour information to doubleing point. This is so that
  // the texture mapping function doesn't have to do the conversion every time
  // it is asked to return the colour at a specific location.
  //
@@ -543,7 +509,7 @@ unsigned char *readPPMimage(const char *filename, int *sx, int *sy)
 
  FILE *f;
  unsigned char *im;
- char line[1024];
+ char line[1032];
  int sizx,sizy;
 
  f=fopen(filename,"rb+");
