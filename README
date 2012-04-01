@@ -22,9 +22,24 @@ March 31, 2012:
 
 	Fixed some bugs!
 	Release Ver 1.32	
+
+	Image_Rescale.cpp
 		Ratio: 13.00
 		FPS: 23.00
 
+April 1, 2012:
+	Creat makefile!
+
+	Release Ver 1.5
+	Image_Rescale.cpp
+		Ratio: 15.17
+		FPS: 24.47
+
+	Image_Rescale_HD.cpp
+		Ratio: 14.00
+		FPS: 23.33
+	
+Almost Finished!
 
 
 Jian Li, 2012
