@@ -500,8 +500,6 @@ int main(int argc, char *argv[])
  }
 
 
-	
-
  // Time your fast routine
  t3=t2=time(NULL);
  c_b=0;
@@ -521,12 +519,6 @@ int main(int argc, char *argv[])
  {
   fprintf(stderr,"Fast routine not implemented\n");
  }
-
-
-
-
-
-
 
  // Output rescaled images for inspection
  dst=slow_rescale(src,sx,sy,HD_Xres,HD_Yres);
